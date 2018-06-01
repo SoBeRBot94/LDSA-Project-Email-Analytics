@@ -27,13 +27,19 @@ def install_updates():
 
 @task
 @roles('master')
-def install_requisites():
+def install_requisites_in_master():
     print("\n \n ----- Installing Requisites ----- \n \n")
-    sudo('apt-get -y install default-jre scala python3 python3-pip jupyter supervisor')
+    sudo('apt-get -y install default-jre scala python3 python3-pip supervisor')
+
+@task
+@roles('master')
+def install_jupyter():
+    print("\n \n ----- Install Jupyter ----- \n \n")
+    sudo('python3 -m pip install jupyter')
 
 @task
 @roles('worker')
-def install_requisites():
+def install_requisites_in_worker():
     print("\n \n ----- Installing Requisites ----- \n \n")
     sudo('apt-get -y install default-jre scala python3 python3-pip')
 
