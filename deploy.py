@@ -42,6 +42,8 @@ def install_jupyter():
 def setup_jupyter_service():
     print("\n \n ----- Setting up Supervisor Service Configuration For Jupyter ----- \n \n")
     put('./jupyter.conf', '/etc/supervisor/conf.d/jupyter.conf', use_sudo=True)
+    sudo('supervisorctl reread')
+    sudo('supervisorctl reload')
 
 @task
 @roles('worker')
