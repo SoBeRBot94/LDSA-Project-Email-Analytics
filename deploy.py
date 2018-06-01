@@ -38,6 +38,12 @@ def install_jupyter():
     sudo('python3 -m pip install jupyter')
 
 @task
+@roles('master')
+def setup_jupyter_service():
+    print("\n \n ----- Setting up Supervisor Service Configuration For Jupyter ----- \n \n")
+    put('./jupyter.conf', '/etc/supervisor/conf.d/jupyter.conf', use_sudo=True)
+
+@task
 @roles('worker')
 def install_requisites_in_worker():
     print("\n \n ----- Installing Requisites ----- \n \n")
