@@ -12,6 +12,7 @@ env.roledefs = {
     'master':[env.hosts[0]],
     'worker':[env.hosts[1]]
         }
+
 @task
 def is_up():
     print("\n \n ----- Checking If The Insatnces Are Up ----- \n \n")
@@ -28,7 +29,7 @@ def install_updates():
 @parallel
 def install_requisites():
     print("\n \n ----- Installing Requisites ----- \n \n")
-    sudo('apt-get -y install default-jre scala python3 python3-pip')
+    sudo('apt-get -y install default-jre scala python3 python3-pip jupyter supervisor')
 @task
 @parallel
 def set_java_env():
