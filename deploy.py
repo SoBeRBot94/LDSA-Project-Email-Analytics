@@ -30,6 +30,14 @@ def set_hostname_in_master():
     sudo('sed -i \'s/127.0.0.1 localhost.*$/127.0.0.1 localhost team-15-instance-master/\' /etc/hosts')
 
 @task
+@roles('master')
+def add_hosts():
+    print("\n \n ----- Adding Hosts ----- \n \n")
+    worker = ''.join(env.hosts[1]).rstrip('\n')
+    sudo('echo >> /etc/hosts')
+    sudo('echo %s team-15-instance-worker >> /etc/hosts' % worker)
+
+@task
 @roles('worker')
 def set_hostname_in_worker():
     print("\n \n ----- Set Hostnames ----- \n \n")
@@ -37,6 +45,26 @@ def set_hostname_in_worker():
     sudo('systemctl restart systemd-hostnamed')
     sudo('echo \'team-15-instance-worker\' > /etc/hostname')
     sudo('sed -i \'s/127.0.0.1 localhost.*$/127.0.0.1 localhost team-15-instance-worker/\' /etc/hosts')
+
+@task
+@roles('master')
+def generate_ssh_keypairs():
+    print("\n \n ----- Generating SSH Keys ----- \n \n")
+    run('ssh-keygen -t rsa -P \"\"')
+
+@task
+@roles('master')
+def ssh_keys_master():
+    print("\n \n ----- Adding SSH Keys ----- \n \n")
+    run('cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys')
+    get('~/.ssh/id_rsa.pub', './id_rsa.pub')
+
+@task
+@roles('worker')
+def ssh_keys_worker():
+    print("\n \n ----- Adding SSH Keys ----- \n \n")
+    put('./id_rsa.pub', '~/.ssh/id_rsa.pub')
+    run('cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys')
 
 @task
 @parallel
@@ -112,3 +140,7 @@ def setup_spark_env():
     sudo('echo \'export SPARK_HOME=/usr/local/spark\' >> /etc/profile')
     sudo('echo \'export PATH=$PATH:$SPARK_HOME/bin\' >> /etc/profile')
 
+@task
+def clean_up():
+    print("\n \n ----- Cleaning Up Junk ----- \n \n")
+    local('rm -rf ./id_rsa.pub ./__pycache__')
