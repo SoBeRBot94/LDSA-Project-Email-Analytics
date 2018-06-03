@@ -19,6 +19,25 @@ def is_up():
     hosts = env.hosts
     for item in list(hosts):
         local('ping -c 5 %s' % item)
+
+@task
+@roles('master')
+def set_hostname_in_master():
+    print("\n \n ----- Set Hostnames ----- \n \n")
+    sudo('hostnamectl set-hostname team-15-instance-master')
+    sudo('systemctl restart systemd-hostnamed')
+    sudo('echo \'team-15-instance-master\' > /etc/hostname')
+    sudo('sed -i \'s/127.0.0.1 localhost.*$/127.0.0.1 localhost team-15-instance-master/\' /etc/hosts')
+
+@task
+@roles('worker')
+def set_hostname_in_worker():
+    print("\n \n ----- Set Hostnames ----- \n \n")
+    sudo('hostnamectl set-hostname team-15-instance-worker')
+    sudo('systemctl restart systemd-hostnamed')
+    sudo('echo \'team-15-instance-worker\' > /etc/hostname')
+    sudo('sed -i \'s/127.0.0.1 localhost.*$/127.0.0.1 localhost team-15-instance-worker/\' /etc/hosts')
+
 @task
 @parallel
 def install_updates():
