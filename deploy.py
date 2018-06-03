@@ -32,6 +32,12 @@ def install_requisites_in_master():
     sudo('apt-get -y install default-jre scala python3 python3-pip supervisor')
 
 @task
+@parallel
+def update_pip3():
+    print("\n \n ----- Update Pip3 ----- \n \n")
+    sudo('python3 -m pip install --upgrade pip')
+
+@task
 @roles('master')
 def install_jupyter():
     print("\n \n ----- Install Jupyter ----- \n \n")
@@ -50,6 +56,12 @@ def setup_jupyter_service():
 def install_requisites_in_worker():
     print("\n \n ----- Installing Requisites ----- \n \n")
     sudo('apt-get -y install default-jre scala python3 python3-pip')
+
+@task
+@parallel
+def install_pyspark():
+    print("\n \n ----- Installing PySpark ----- \n \n")
+    sudo('python3 -m pip install pyspark')
 
 @task
 @parallel
