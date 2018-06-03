@@ -6,7 +6,7 @@ from fabric.api import *
 from fabric.decorators import parallel
 
 env.user = 'ubuntu'
-env.key_filename = '/home/SoBeRBot94/University-Files/SEM-2/LDSA/Project/team-15-instance-key.pem'
+env.key_filename = '/home/SoBeRBot94/University-Files/SEM-2/LDSA/Project/team-15-project.pem'
 env.hosts = open('hostfile', 'r').readlines()
 env.roledefs = {
     'master':[env.hosts[0]],
@@ -30,12 +30,6 @@ def install_updates():
 def install_requisites_in_master():
     print("\n \n ----- Installing Requisites ----- \n \n")
     sudo('apt-get -y install default-jre scala python3 python3-pip supervisor')
-
-@task
-@parallel
-def update_pip3():
-    print("\n \n ----- Update Pip3 ----- \n \n")
-    sudo('python3 -m pip install --upgrade pip')
 
 @task
 @roles('master')
