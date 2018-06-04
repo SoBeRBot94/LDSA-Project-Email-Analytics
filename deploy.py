@@ -141,6 +141,24 @@ def setup_spark_env():
     sudo('echo \'export PATH=$PATH:$SPARK_HOME/bin\' >> /etc/profile')
 
 @task
+@parallel
+def configure_spark():
+    print("\n \n ----- Configuring Spark Cluster Nodes ----- \n \n")
+    worker = ''.join(env.hosts[1]).rstrip('\n')
+    run('cp /usr/local/spark/conf/spark-env.sh.template /usr/local/spark/conf/spark-env.sh')
+    run('echo >> /usr/local/spark/conf/spark-env.sh')
+    run('echo \'export JAVA_HOME=/usr/lib/jvm/default-java\' >> /usr/local/spark/conf/spark-env.sh')
+    run('echo \'export SPARK_WORKER_CORES=6\' >> /usr/local/spark/conf/spark-env.sh')
+    run('echo \'%s\' > /usr/local/spark/conf/slaves' % worker)
+
+@task
+@roles('master')
+def configure_spark_master():
+    print("\n \n ----- Configure Spark Master Node ----- \n \n")
+    master = run('ifconfig | grep inet\ addr | awk \'FNR ==1 {print $2}\' | cut -d \':\' -f 2')
+    run('echo \'export SPARK_MASTER_HOST=%s\' >> /usr/local/spark/conf/spark-env.sh' % master)
+
+@task
 def clean_up():
     print("\n \n ----- Cleaning Up Junk ----- \n \n")
     local('rm -rf ./id_rsa.pub ./__pycache__')
