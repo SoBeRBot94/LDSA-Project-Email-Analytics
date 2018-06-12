@@ -106,6 +106,14 @@ def install_pyspark():
 
 @task
 @parallel
+def setup_pyspark_env():
+    print("\n \n ----- Setup PySpark Environment ----- \n \n")
+    sudo('echo >> /etc/profile')
+    sudo('echo \'export PYSPARK_PYTHON=/usr/bin/python3\' >> /etc/profile')
+    sudo('echo \'export PYSPARK_DRIVER_PYTHON=/usr/bin/ipython\' >> /etc/profile')
+
+@task
+@parallel
 def set_java_env():
     print("\n \n ----- Setting Java Environment Variables ----- \n \n")
     sudo('echo >> /etc/profile')
