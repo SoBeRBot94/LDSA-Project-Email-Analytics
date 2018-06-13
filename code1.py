@@ -10,3 +10,9 @@ spark_session = SparkSession\
 spark_context = spark_session.sparkContext
 
 rdd = spark_context.textFile("/home/ubuntu/DATA/enron_mail_20110402/maildir/king-j/all_documents/1.")
+
+#('/home/ubuntu/DATA/enron_mail_20110402/maildir/*/all_documents/*', minPartitions=40)
+dataframe = spark_session.read.load("/home/ubuntu/DATA/enron_mail_20110402/maildir/king-j/all_documents/1.", format="csv").cache()
+
+#spark_context.stop()
+
