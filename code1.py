@@ -16,3 +16,6 @@ dataframe = spark_session.read.load("/home/ubuntu/DATA/enron_mail_20110402/maild
 
 #spark_context.stop()
 
+dataframe.head(5)
+
+#The 5 top rows are the ones we need for solving the assignment
