@@ -22,10 +22,21 @@ data = [go.Bar(
                 )
     )]
 
-layout = go.Layout(
+layout_a = go.Layout(
+        xaxis = dict(range=[1975,1980]),
+        yaxis = dict(range=[0, 500]),
         title='Number of Enron Email Transacions Grouped Yearwise',
         font=dict(color = "black", size = 16),
         )
 
-fig= go.Figure(data=data, layout=layout)
-py.offline.plot(fig, filename='emailTransactionsPlot')
+fig_a = go.Figure(data=data, layout=layout_a)
+py.offline.plot(fig_a, filename='emailTransactionsPlot_beforeThe90s')
+
+layout_b = go.Layout(
+        xaxis = dict(range=[1995,2005]),
+        title='Number of Enron Email Transacions Grouped Yearwise',
+        font=dict(color = "black", size = 16),
+        )
+
+fig_b = go.Figure(data=data, layout=layout_b)
+py.offline.plot(fig_b, filename='emailTransactionsPlot_betweenThe1995_2005')
