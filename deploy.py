@@ -37,7 +37,7 @@ def set_hostname_in_master():
 @roles('master')
 def add_hosts():
     print("\n \n ----- Adding Hosts ----- \n \n")
-    worker = ''.join(env.hosts[1]).rstrip('\n')
+    worker = env.hosts['worker']
     sudo('echo >> /etc/hosts')
     sudo('echo %s team-15-instance-worker >> /etc/hosts' % worker)
 
@@ -156,7 +156,7 @@ def setup_spark_env():
 @parallel
 def configure_spark():
     print("\n \n ----- Configuring Spark Cluster Nodes ----- \n \n")
-    worker = ''.join(env.hosts[1]).rstrip('\n')
+    worker = env.hosts['worker']
     run('cp /usr/local/spark/conf/spark-env.sh.template /usr/local/spark/conf/spark-env.sh')
     run('echo >> /usr/local/spark/conf/spark-env.sh')
     run('echo \'export JAVA_HOME=/usr/lib/jvm/default-java\' >> /usr/local/spark/conf/spark-env.sh')
