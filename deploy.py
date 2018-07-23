@@ -2,23 +2,27 @@
 
 # Python Fabric File to Deploy Spark Cluster On SNIC Instances
 
+import yaml
 from fabric.api import *
 from fabric.decorators import parallel
 
-env.user = 'ubuntu'
-env.key_filename = '/home/SoBeRBot94/University-Files/SEM-2/LDSA/Project/team-15-project.pem'
-env.hosts = open('hostfile', 'r').readlines()
+with open("config.yml", 'r') as ymlfile:
+    config = yaml.load(ymlfile)
+
+env.user = config['ssh']['user']
+env.key_filename = config['ssh']['keyfile']
+env.hosts = config['hosts']
 env.roledefs = {
-    'master':[env.hosts[0]],
-    'worker':[env.hosts[1]]
+    'master':env.hosts['master'],
+    'worker':env.hosts['worker']
         }
 
 @task
 def is_up():
     print("\n \n ----- Checking If The Insatnces Are Up ----- \n \n")
     hosts = env.hosts
-    for item in list(hosts):
-        local('ping -c 5 %s' % item)
+    for values in hosts.values():
+        local('ping -c 5 %s' % values)
 
 @task
 @roles('master')
