@@ -1,4 +1,4 @@
-#!/usr/local/env python3
+#!/usr/bin/env python3
 
 # Python Fabric File to Deploy Spark Cluster On SNIC Instances
 
@@ -11,18 +11,21 @@ with open("config.yml", 'r') as ymlfile:
 
 env.user = config['ssh']['user']
 env.key_filename = config['ssh']['keyfile']
-env.hosts = config['hosts']
+
+hosts = config['hosts']
+for values in hosts.values():
+    env.hosts.append(values)
+
 env.roledefs = {
-    'master':env.hosts['master'],
-    'worker':env.hosts['worker']
+    'master':hosts['master'],
+    'worker':hosts['worker']
         }
 
 @task
 def is_up():
     print("\n \n ----- Checking If The Insatnces Are Up ----- \n \n")
-    hosts = env.hosts
-    for values in hosts.values():
-        local('ping -c 5 %s' % values)
+    for items in env.hosts:
+        local('ping -c 5 %s' % items)
 
 @task
 @roles('master')
@@ -37,7 +40,7 @@ def set_hostname_in_master():
 @roles('master')
 def add_hosts():
     print("\n \n ----- Adding Hosts ----- \n \n")
-    worker = env.hosts['worker']
+    worker = hosts['worker']
     sudo('echo >> /etc/hosts')
     sudo('echo %s team-15-instance-worker >> /etc/hosts' % worker)
 
@@ -156,7 +159,7 @@ def setup_spark_env():
 @parallel
 def configure_spark():
     print("\n \n ----- Configuring Spark Cluster Nodes ----- \n \n")
-    worker = env.hosts['worker']
+    worker = hosts['worker']
     run('cp /usr/local/spark/conf/spark-env.sh.template /usr/local/spark/conf/spark-env.sh')
     run('echo >> /usr/local/spark/conf/spark-env.sh')
     run('echo \'export JAVA_HOME=/usr/lib/jvm/default-java\' >> /usr/local/spark/conf/spark-env.sh')
