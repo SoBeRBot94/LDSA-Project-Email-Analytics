@@ -2,3 +2,4 @@ __pycache__
 Counts.txt
 *.html
 config.yml
+terraform.tfvars
