@@ -5,3 +5,4 @@ config.yml
 terraform.tfvars
 *.tfstate
 *.tfstate.backup
+.terraform/
