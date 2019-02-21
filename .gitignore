@@ -3,3 +3,5 @@ Counts.txt
 *.html
 config.yml
 terraform.tfvars
+*.tfstate
+*.tfstate.backup
