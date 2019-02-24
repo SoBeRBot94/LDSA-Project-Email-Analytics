@@ -8,70 +8,56 @@ variable "compute_flavor_name" {}
 variable "compute_key_pair_name" {}
 variable "private_network_id" {}
 variable "floatingip_pool_name" {}
-variable "port_count" {}
 variable "ip_type" {}
 variable "ip_protocol" {}
+variable "ssh_port" {}
+variable "jupyter_port" {}
+variable "spark_master_port" {}
+variable "spark_app_port" {}
 variable "cidr_block" {}
-
-variable "ports" {
-  type = "list"
-}
-
-variable "Spark-Cluster-Security-Group-Id" {
-  default = ""
-}
-
-variable "Default-Security-Group-Id" {
-  default = ""
-}
 
 resource "openstack_networking_secgroup_v2" "Spark-Cluster-Security-Group" {
   name = "Spark-Cluster-Security-Group"
 }
 
-resource "openstack_networking_secgroup_v2" "Default" {
-  name = "default"
-}
-
-resource "openstack_networking_secgroup_rule_v2" "Rule-Jupyter" {
-  count             = "${var.port_count}"
+resource "openstack_networking_secgroup_rule_v2" "Rule-SSH" {
   direction         = "ingress"
   ethertype         = "${var.ip_type}"
   protocol          = "${var.ip_protocol}"
-  port_range_min    = "${element(var.ports, count.index)}"
-  port_range_max    = "${element(var.ports, count.index)}"
+  port_range_min    = "${var.ssh_port}"
+  port_range_max    = "${var.ssh_port}"
+  remote_ip_prefix  = "${var.cidr_block}"
+  security_group_id = "${openstack_networking_secgroup_v2.Spark-Cluster-Security-Group.id}"
+}
+
+resource "openstack_networking_secgroup_rule_v2" "Rule-Jupyter" {
+  direction         = "ingress"
+  ethertype         = "${var.ip_type}"
+  protocol          = "${var.ip_protocol}"
+  port_range_min    = "${var.jupyter_port}"
+  port_range_max    = "${var.jupyter_port}"
   remote_ip_prefix  = "${var.cidr_block}"
   security_group_id = "${openstack_networking_secgroup_v2.Spark-Cluster-Security-Group.id}"
 }
 
 resource "openstack_networking_secgroup_rule_v2" "Rule-Spark-Master-UI" {
-  count             = "${var.port_count}"
   direction         = "ingress"
   ethertype         = "${var.ip_type}"
   protocol          = "${var.ip_protocol}"
-  port_range_min    = "${element(var.ports, count.index)}"
-  port_range_max    = "${element(var.ports, count.index)}"
+  port_range_min    = "${var.spark_master_port}"
+  port_range_max    = "${var.spark_master_port}"
   remote_ip_prefix  = "${var.cidr_block}"
   security_group_id = "${openstack_networking_secgroup_v2.Spark-Cluster-Security-Group.id}"
 }
 
 resource "openstack_networking_secgroup_rule_v2" "Rule-Spark-Application-UI" {
-  count             = "${var.port_count}"
   direction         = "ingress"
   ethertype         = "${var.ip_type}"
   protocol          = "${var.ip_protocol}"
-  port_range_min    = "${element(var.ports, count.index)}"
-  port_range_max    = "${element(var.ports, count.index)}"
+  port_range_min    = "${var.spark_app_port}"
+  port_range_max    = "${var.spark_app_port}"
   remote_ip_prefix  = "${var.cidr_block}"
   security_group_id = "${openstack_networking_secgroup_v2.Spark-Cluster-Security-Group.id}"
-}
-
-output "Spark-Cluster-Security-Group-Id" {
-  value = "${openstack_networking_secgroup_v2.Spark-Cluster-Security-Group.id}"
-}
-
-output "Default-Security-Group-Id" {
-  value = "${openstack_networking_secgroup_v2.Default.id}"
 }
 
 resource "openstack_compute_instance_v2" "Spark-Master" {
@@ -80,7 +66,7 @@ resource "openstack_compute_instance_v2" "Spark-Master" {
   image_id        = "${var.compute_image_id}"
   flavor_name     = "${var.compute_flavor_name}"
   key_pair        = "${var.compute_key_pair_name}"
-  security_groups = "${list("${var.Default-Security-Group-Id}", "${var.Spark-Cluster-Security-Group-Id}")}"
+  security_groups = ["${openstack_networking_secgroup_v2.Spark-Cluster-Security-Group.id}"]
 
   network {
     uuid = "${var.private_network_id}"
@@ -110,7 +96,7 @@ resource "openstack_compute_instance_v2" "Spark-Slaves" {
   image_id        = "${var.compute_image_id}"
   flavor_name     = "${var.compute_flavor_name}"
   key_pair        = "${var.compute_key_pair_name}"
-  security_groups = "${list("${var.Default-Security-Group-Id}", "${var.Spark-Cluster-Security-Group-Id}")}"
+  security_groups = ["${openstack_networking_secgroup_v2.Spark-Cluster-Security-Group.id}"]
 
   network {
     uuid = "${var.private_network_id}"
