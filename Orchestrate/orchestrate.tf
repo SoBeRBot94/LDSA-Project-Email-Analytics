@@ -6,11 +6,6 @@ variable "slaves_count" {}
 variable "compute_image_id" {}
 variable "compute_flavor_name" {}
 variable "compute_key_pair_name" {}
-
-variable "security_group_names" {
-  type = "list"
-}
-
 variable "private_network_id" {}
 variable "floatingip_pool_name" {}
 variable "port_count" {}
@@ -74,7 +69,7 @@ resource "openstack_compute_instance_v2" "Spark-Master" {
   image_id        = "${var.compute_image_id}"
   flavor_name     = "${var.compute_flavor_name}"
   key_pair        = "${var.compute_key_pair_name}"
-  security_groups = "${var.security_group_names}"
+  security_groups = "${list("${var.Default-Security-Group-Id}", "${var.Spark-Cluster-Security-Group-Id}")}"
 
   network {
     uuid = "${var.private_network_id}"
@@ -104,7 +99,7 @@ resource "openstack_compute_instance_v2" "Spark-Slaves" {
   image_id        = "${var.compute_image_id}"
   flavor_name     = "${var.compute_flavor_name}"
   key_pair        = "${var.compute_key_pair_name}"
-  security_groups = "${var.security_group_names}"
+  security_groups = "${list("${var.Default-Security-Group-Id}", "${var.Spark-Cluster-Security-Group-Id}")}"
 
   network {
     uuid = "${var.private_network_id}"
