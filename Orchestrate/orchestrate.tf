@@ -13,53 +13,59 @@ variable "security_group_names" {
 
 variable "private_network_id" {}
 variable "floatingip_pool_name" {}
-variable "ssh_port" {}
-variable "jupyter_port" {}
-variable "spark_master_ui_port" {}
-variable "apark_application_ui_port" {}
+variable "port_count" {}
+
+variable "ports" {
+  type = "list"
+}
 
 resource "openstack_networking_secgroup_v2" "Spark-Cluster-Security-Group" {
   name = "Spark-Cluster-Security-Group"
 }
 
-resource "openstack_networking_secgroup_rule_v2" "Rule-SSH" {
-  direction         = "ingress"
-  ethertype         = "${var.ip_type}"
-  protocol          = "${var.ip_protocol}"
-  port_range_min    = "${var.ssh_port}"
-  port_range_max    = "${var.ssh_port}"
-  remote_ip_prefix  = "${var.cidr_block}"
-  security_group_id = "${openstack_networking_secgroup_v2.Spark-Cluster-Security-Group.id}"
+resource "openstack_networking_secgroup_v2" "Default" {
+  name = "default"
 }
 
 resource "openstack_networking_secgroup_rule_v2" "Rule-Jupyter" {
+  count             = "${var.port_count}"
   direction         = "ingress"
   ethertype         = "${var.ip_type}"
   protocol          = "${var.ip_protocol}"
-  port_range_min    = "${var.jupyter_port}"
-  port_range_max    = "${var.jupyter_port}"
+  port_range_min    = "${element(var.ports, count.index)}"
+  port_range_max    = "${element(var.ports, count.index)}"
   remote_ip_prefix  = "${var.cidr_block}"
   security_group_id = "${openstack_networking_secgroup_v2.Spark-Cluster-Security-Group.id}"
 }
 
 resource "openstack_networking_secgroup_rule_v2" "Rule-Spark-Master-UI" {
+  count             = "${var.port_count}"
   direction         = "ingress"
   ethertype         = "${var.ip_type}"
   protocol          = "${var.ip_protocol}"
-  port_range_min    = "${var.spark_master_ui_port}"
-  port_range_max    = "${var.spark_master_ui_port}"
+  port_range_min    = "${element(var.ports, count.index)}"
+  port_range_max    = "${element(var.ports, count.index)}"
   remote_ip_prefix  = "${var.cidr_block}"
   security_group_id = "${openstack_networking_secgroup_v2.Spark-Cluster-Security-Group.id}"
 }
 
 resource "openstack_networking_secgroup_rule_v2" "Rule-Spark-Application-UI" {
+  count             = "${var.port_count}"
   direction         = "ingress"
   ethertype         = "${var.ip_type}"
   protocol          = "${var.ip_protocol}"
-  port_range_min    = "${var.spark_application_ui_port}"
-  port_range_max    = "${var.spark_application_ui_port}"
+  port_range_min    = "${element(var.ports, count.index)}"
+  port_range_max    = "${element(var.ports, count.index)}"
   remote_ip_prefix  = "${var.cidr_block}"
   security_group_id = "${openstack_networking_secgroup_v2.Spark-Cluster-Security-Group.id}"
+}
+
+output "Spark-Cluster-Security-Group-Id" {
+  value = "${openstack_networking_secgroup_v2.Spark-Cluster-Security-Group.id}"
+}
+
+output "Default-Security-Group-Id" {
+  value = "${openstack_networking_secgroup_v2.Default.id}"
 }
 
 resource "openstack_compute_instance_v2" "Spark-Master" {
