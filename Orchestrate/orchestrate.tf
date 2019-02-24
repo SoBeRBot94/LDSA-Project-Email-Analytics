@@ -9,9 +9,20 @@ variable "compute_key_pair_name" {}
 variable "private_network_id" {}
 variable "floatingip_pool_name" {}
 variable "port_count" {}
+variable "ip_type" {}
+variable "ip_protocol" {}
+variable "cidr_block" {}
 
 variable "ports" {
   type = "list"
+}
+
+variable "Spark-Cluster-Security-Group-Id" {
+  default = ""
+}
+
+variable "Default-Security-Group-Id" {
+  default = ""
 }
 
 resource "openstack_networking_secgroup_v2" "Spark-Cluster-Security-Group" {
