@@ -16,6 +16,7 @@ variable "spark_master_port" {}
 variable "spark_master_ui_port" {}
 variable "spark_app_port" {}
 variable "cidr_block" {}
+variable "slaves_fip_count" {}
 
 resource "openstack_networking_secgroup_v2" "Spark-Cluster-Security-Group" {
   name = "Spark-Cluster-Security-Group"
@@ -71,6 +72,11 @@ resource "openstack_networking_secgroup_rule_v2" "Rule-Spark-Application-UI" {
   security_group_id = "${openstack_networking_secgroup_v2.Spark-Cluster-Security-Group.id}"
 }
 
+resource "openstack_blockstorage_volume_v2" "Email-Data-Volume" {
+  name = "Email-Data-Volume"
+  size = 150
+}
+
 resource "openstack_compute_instance_v2" "Spark-Master" {
   count           = "${var.master_count}"
   name            = "Spark-Master"
@@ -101,6 +107,11 @@ resource "openstack_compute_floatingip_associate_v2" "Master-FIP" {
   instance_id = "${openstack_compute_instance_v2.Spark-Master.id}"
 }
 
+resource "openstack_compute_volume_attach_v2" "Volume-Attach" {
+  instance_id = "${openstack_compute_instance_v2.Spark-Master.id}"
+  volume_id   = "${openstack_blockstorage_volume_v2.Email-Data-Volume.id}"
+}
+
 resource "openstack_compute_instance_v2" "Spark-Slaves" {
   count           = "${var.slaves_count}"
   name            = "${format("Spark-Slave-%d", count.index+1)}"
@@ -120,4 +131,15 @@ resource "openstack_compute_instance_v2" "Spark-Slaves" {
     boot_index            = 0
     delete_on_termination = true
   }
+}
+
+resource "openstack_networking_floatingip_v2" "Slaves-FloatingIP-Pool" {
+  count = "${var.slaves_fip_count}"
+  pool  = "${var.floatingip_pool_name}"
+}
+
+resource "openstack_compute_floatingip_associate_v2" "Slaves-FIP" {
+  count       = "${var.slaves_fip_count}"
+  floating_ip = "${element(openstack_networking_floatingip_v2.Slaves-FloatingIP-Pool.*.address, count.index)}"
+  instance_id = "${element(openstack_compute_instance_v2.Spark-Slaves.*.id, count.index)}"
 }
