@@ -143,3 +143,30 @@ resource "openstack_compute_floatingip_associate_v2" "Slaves-FIP" {
   floating_ip = "${element(openstack_networking_floatingip_v2.Slaves-FloatingIP-Pool.*.address, count.index)}"
   instance_id = "${element(openstack_compute_instance_v2.Spark-Slaves.*.id, count.index)}"
 }
+
+# ==================================================
+# Ansible Dynamic Inventory Block
+
+data "template_file" "Ansible_Dynamic_Inventory" {
+  template = "${file("${path.module}/ansible_hosts.tpl")}"
+
+  depends_on = [
+    "openstack_compute_floatingip_associate_v2.Master-FIP",
+    "openstack_compute_floatingip_associate_v2.Slaves-FIP",
+  ]
+
+  vars {
+    spark_master_public_ip = "${openstack_compute_floatingip_associate_v2.Master-FIP.floating_ip}"
+    spark_slaves_public_ip = "${join("\n",openstack_compute_floatingip_associate_v2.Slaves-FIP.*.floating_ip)}"
+  }
+}
+
+resource "null_resource" "Ansible_Dynamic_Inventory" {
+  triggers {
+    template_rendered = "${join("",data.template_file.Ansible_Dynamic_Inventory.*.rendered)}"
+  }
+
+  provisioner "local-exec" {
+    command = "echo '${join("",data.template_file.Ansible_Dynamic_Inventory.*.rendered)}' > Spark_Cluster_Hosts"
+  }
+}
