@@ -156,8 +156,9 @@ data "template_file" "Ansible_Dynamic_Inventory" {
   ]
 
   vars {
-    spark_master_public_ip = "${openstack_compute_floatingip_associate_v2.Master-FIP.floating_ip}"
-    spark_slaves_public_ip = "${join("\n",openstack_compute_floatingip_associate_v2.Slaves-FIP.*.floating_ip)}"
+    spark_master_public_ip  = "${openstack_compute_floatingip_associate_v2.Master-FIP.floating_ip}"
+    spark_slave_1_public_ip = "${openstack_compute_floatingip_associate_v2.Slaves-FIP.*.floating_ip[0]}	hostname_suffix=1"
+    spark_slave_2_public_ip = "${openstack_compute_floatingip_associate_v2.Slaves-FIP.*.floating_ip[1]}	hostname_suffix=2"
   }
 }
 
