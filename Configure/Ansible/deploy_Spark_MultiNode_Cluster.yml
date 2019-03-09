@@ -1,0 +1,313 @@
+# vi: set ft=yaml.ansible :
+---
+- hosts: Master
+  become: yes
+  remote_user: ubuntu
+  gather_facts: no
+  pre_tasks:
+    - name: "Update Aptitude Cache"
+      raw: sudo apt-get -y update
+
+    - name: "Task 0: Install Python2"
+      raw: sudo apt-get -y install python
+
+  vars:
+    new_hostname: spark-master
+
+  tasks:
+
+  - name: "Task 1: Set Hostname [1] ---> Hostnamectl"
+    hostname:
+      name: "{{ new_hostname }}"
+
+  - name: "Task 2: Set Hostname [2] ---> /etc/hosts"
+    template:
+      src: ./hosts.j2
+      dest: /etc/hosts
+      mode: 0644
+      owner: root
+      group: root
+      force: yes
+
+  - name: "Task 3: Set Hostname [3] ---> Replace /etc/hostname"
+    replace:
+      path: /etc/hostname
+      regexp: '[a-z]*-*[a-z]*'
+      replace: "{{ new_hostname }}"
+
+  - name: "Task 4: Set Hostname [4] ---> Set Persistance"
+    replace:
+      path: /etc/cloud/cloud.cfg
+      regexp: 'preserve_hostname: false'
+      replace: 'preserve_hostname: yes'
+
+  - name: "Task 5: Create SSH RSA Keys"
+    command: ssh-keygen -q -t rsa -f /home/ubuntu/.ssh/spark_cluster_rsa -C "" -N ""
+    args:
+      creates: /home/ubuntu/.ssh/spark_cluster_rsa
+
+  - name: "Task 6: Chown SSH RSA Keys"
+    file:
+      path: "{{ item }}"
+      state: touch
+      owner: ubuntu
+      group: ubuntu
+    with_items:
+      - /home/ubuntu/.ssh/spark_cluster_rsa
+      - /home/ubuntu/.ssh/spark_cluster_rsa.pub
+
+  - name: "Task 7: Fetch SSH RSA KeyFile"
+    fetch:
+      src: /home/ubuntu/.ssh/spark_cluster_rsa.pub
+      dest: ./spark_cluster_rsa.pub
+      flat: yes
+
+  - name: "Task 8: Deploy SSH RSA Keys"
+    shell: cat /home/ubuntu/.ssh/spark_cluster_rsa.pub >> /home/ubuntu/.ssh/authorized_keys
+    args:
+      executable: /bin/bash
+
+  - name: "Task 9: Install Pre-Requisites"
+    apt:
+      update_cache: yes
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - default-jre
+      - scala
+      - python3
+      - python-pip
+      - python3-pip
+      - supervisor
+
+  - name: "Task 10: Update pip2 & pip3"
+    pip:
+      name: pip
+      extra_args: --upgrade
+      executable: "{{ item }}"
+    with_items:
+      - pip2
+      - pip3
+
+  - name: "Task 11: Install Jupyter"
+    pip:
+      name: jupyter
+      state: latest
+      executable: pip3
+
+  - name: "Task 12: Create Supervisord log Directory"
+    file:
+      path: /var/log/supervisor
+      state: directory
+
+  - name: "Task 13: Start Supervisord Service"
+    service:
+      name: supervisor
+      state: restarted
+
+  - name: "Task 14: Copy Jupyter Supervisor Service Configuration File"
+    copy:
+      src: ./jupyter.conf
+      dest: /etc/supervisor/conf.d/jupyter.conf
+      mode: 0644
+      owner: root
+      group: root
+
+  - name: "Task 15: Re-load Supervisor Configuration"
+    become: yes
+    command: supervisorctl reload
+
+# --------------------------------------------------
+
+- hosts: Slaves
+  become: yes
+  remote_user: ubuntu
+  gather_facts: no
+  pre_tasks:
+    - name: "Update Aptitude Cache"
+      raw: sudo apt-get -y update
+
+    - name: "Task 0: Install Python2"
+      raw: sudo apt-get -y install python
+
+  tasks:
+
+  - name: "Task 1: Set Hostname [1] ---> Hostnamectl"
+    hostname:
+      name: spark-slave-{{ hostname_suffix }}
+
+  - name: "Task 2: Set Hostname [2] ---> /etc/hosts"
+    template:
+      src: ./slaves_hosts.j2
+      dest: /etc/hosts
+      mode: 0644
+      owner: root
+      group: root
+      force: yes
+
+  - name: "Task 3: Set Hostname [3] ---> Replace /etc/hostname"
+    replace:
+      path: /etc/hostname
+      regexp: '[a-z]*-*[a-z]*'
+      replace: spark-slave-{{ hostname_suffix }}
+
+  - name: "Task 4: Set Hostname [4] ---> Set Persistance"
+    replace:
+      path: /etc/cloud/cloud.cfg
+      regexp: 'preserve_hostname: false'
+      replace: 'preserve_hostname: yes'
+
+  - name: "Task 5: Copy RSA KeyFile"
+    copy:
+      src: ./spark_cluster_rsa.pub
+      dest: /home/ubuntu/.ssh/spark_cluster_rsa.pub
+
+  - name: "Task 6: Chown RSA Keys"
+    file:
+      path: "{{ item }}"
+      state: touch
+      owner: ubuntu
+      group: ubuntu
+    with_items:
+      - /home/ubuntu/.ssh/spark_cluster_rsa
+      - /home/ubuntu/.ssh/spark_cluster_rsa.pub
+
+  - name: "Task 8: Deploy SSH RSA Keys"
+    shell: cat /home/ubuntu/.ssh/spark_cluster_rsa.pub >> /home/ubuntu/.ssh/authorized_keys
+    args:
+      executable: /bin/bash
+    
+  - name: "Task 9: Install Pre-Requisites"
+    apt:
+      update_cache: yes
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - default-jre
+      - scala
+      - python3
+      - python-pip
+      - python3-pip
+
+  - name: "Task 10: Update pip2 & pip3"
+    pip:
+      name: pip
+      extra_args: --upgrade
+      executable: "{{ item }}"
+    with_items:
+      - pip2
+      - pip3
+
+# --------------------------------------------------
+
+- hosts: Master:Slaves
+  become: yes
+  remote_user: ubuntu
+  gather_facts: no
+
+  tasks:
+
+  - name: "Task 1: Install PySpark"
+    pip:
+      name: pyspark
+      state: latest
+      executable: pip3
+
+  - name: "Task 2: Setup PySpark Environment"
+    become: yes
+    lineinfile:
+      path: /etc/profile
+      line: "{{ item }}"
+      state: present
+    with_items:
+      - export PYSPARK_PYTHON=/usr/bin/python3
+      - export PYSPARK_DRIVER_PYTHON=/usr/bin/ipython
+
+  - name: "Task 3: Setup JAVA Environment"
+    become: yes
+    lineinfile:
+      path: /etc/profile
+      line: "{{ item }}"
+      state: present
+    with_items:
+      - export JAVA_HOME=/usr/lib/jvm/default-java
+      - export PATH=$PATH:$JAVA_HOME/bin
+
+  - name: "Task 4: Fetch Spark 2.4.0 - Hadoop 2.7 Tarball"
+    get_url:
+      url: http://apache.mirrors.spacedump.net/spark/spark-2.4.0/spark-2.4.0-bin-hadoop2.7.tgz
+      dest: /home/ubuntu/spark-2.4.0-bin-hadoop2.7.tgz
+
+  - name: "Task 5: Extract Spark TarBall"
+    unarchive:
+      src: /home/ubuntu/spark-2.4.0-bin-hadoop2.7.tgz
+      dest: /home/ubuntu/
+      remote_src: yes
+
+  - name: "Task 6: Setup Spark Environment"
+    command: cp -r /home/ubuntu/spark-2.4.0-bin-hadoop2.7 /usr/local/spark
+
+  - name: "Task 7: Chown Spark"
+    file:
+      path: /usr/local/spark
+      state: touch
+      owner: ubuntu
+      group: ubuntu
+
+  - name: "Task 7: Setup Spark Environment Variables"
+    become: yes
+    lineinfile:
+      path: /etc/profile
+      line: "{{ item }}"
+      state: present
+    with_items:
+      - export SPARK_HOME=/usr/local/spark
+      - export PATH=$PATH:$SPARK_HOME/bin
+
+  - name: "Task 8: Configure Spark Cluster Nodes [1] ---> Copy Template File to a new Env File"
+    copy:
+      src: /usr/local/spark/conf/spark-env.sh.template
+      dest: /usr/local/spark/conf/spark-env.sh
+      owner: ubuntu
+      group: ubuntu
+      remote_src: yes
+
+  - name: "Task 9: Configure Spark Cluster Nodes [2] ---> Set Spark Cluster Node Configuration Environment Variables"
+    lineinfile:
+      path: /usr/local/spark/conf/spark-env.sh.template
+      line: "{{ item }}"
+      state: present
+    with_items:
+      - export JAVA_HOME=/usr/lib/jvm/default-java
+      - export SPARK_WORKER_CORES=4
+
+  - name: "Task 11: Configure Spark Cluster Nodes [3] ---> Set-up Spark Slaves File"
+    lineinfile:
+      path: /usr/local/spark/conf/slaves
+      create: yes
+      line: "{{ item }}"
+      state: present
+      owner: ubuntu
+      group: ubuntu
+    with_inventory_hostnames: Slaves
+
+# --------------------------------------------------
+
+- hosts: Master
+  become: yes
+  remote_user: ubuntu
+  gather_facts: yes
+
+  tasks:
+
+  - name: "Task 1: Set Spark Master Host Fact"
+    set_fact:
+      spark_master_private_ip: "{{ ansible_all_ipv4_addresses | ipaddr('private') | first}}"
+
+  - name: "Task 2: Set Spark Master Host Environment Variable"
+    lineinfile:
+      path: /usr/local/spark/conf/spark-env.sh
+      line: "{{ item }}"
+      state: present
+    with_items:
+      - export SPARK_MASTER_HOST={{ spark_master_private_ip }}
