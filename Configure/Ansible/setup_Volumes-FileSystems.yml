@@ -1,0 +1,41 @@
+# vi: set ft=yaml.ansible :
+---
+- hosts: Master
+  become: yes
+  remote_user: ubuntu
+  gather_facts: no
+
+  tasks:
+
+  - name: "Create The Mount Point"
+    file:
+      path: /home/ubuntu/DATA
+      owner: ubuntu
+      group: ubuntu
+      state: directory
+      mode: 0755
+
+  - name: "Create FileSystem On The Block Device"
+    filesystem:
+      fstype: ext4
+      dev: /dev/vdb
+
+  - name: "Mount The FileSystem"
+    mount:
+      path: /home/ubuntu/DATA
+      src: /dev/vdb
+      fstype: ext4
+      state: mounted
+
+  - name: "Change Ownership Of The FileSystem"
+    file:
+      path: /home/ubuntu/DATA
+      recurse: yes
+      owner: ubuntu
+      group: ubuntu
+      state: directory
+
+  - name: "Remove lost+found Directory"
+    file:
+      path: /home/ubuntu/DATA/lost+found
+      state: absent
