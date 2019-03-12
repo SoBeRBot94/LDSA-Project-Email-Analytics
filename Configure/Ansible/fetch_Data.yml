@@ -1,0 +1,23 @@
+# vi: set ft=yaml.ansible :
+---
+- hosts: Master
+  become: yes
+  gather_facts: no
+  remote_user: ubuntu
+
+  tasks:
+
+  - name: "Fetch Enron Email Archive"
+    get_url:
+      url: https://www.cs.cmu.edu/~./enron/enron_mail_20150507.tar.gz
+      dest: /home/ubuntu/DATA/enron_mail_20150507.tar.gz
+      owner: ubuntu
+      group: ubuntu
+
+  - name: "Unzip the Arhive"
+    unarchive:
+      src: /home/ubuntu/DATA/enron_mail_20150507.tar.gz
+      dest: /home/ubuntu/DATA
+      owner: ubuntu
+      group: ubuntu
+      remote_src: yes
