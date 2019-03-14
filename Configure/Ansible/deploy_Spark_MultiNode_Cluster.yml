@@ -42,9 +42,9 @@
       replace: 'preserve_hostname: yes'
 
   - name: "Task 5: Create SSH RSA Keys"
-    command: ssh-keygen -q -t rsa -f /home/ubuntu/.ssh/spark_cluster_rsa -C "" -N ""
+    command: ssh-keygen -t rsa -f /home/ubuntu/.ssh/id_rsa -P ""
     args:
-      creates: /home/ubuntu/.ssh/spark_cluster_rsa
+      creates: /home/ubuntu/.ssh/id_rsa
 
   - name: "Task 6: Chown SSH RSA Keys"
     file:
@@ -52,18 +52,20 @@
       state: touch
       owner: ubuntu
       group: ubuntu
+      mode: 0600
     with_items:
-      - /home/ubuntu/.ssh/spark_cluster_rsa
-      - /home/ubuntu/.ssh/spark_cluster_rsa.pub
+      - /home/ubuntu/.ssh/id_rsa
+      - /home/ubuntu/.ssh/id_rsa.pub
 
   - name: "Task 7: Fetch SSH RSA KeyFile"
     fetch:
-      src: /home/ubuntu/.ssh/spark_cluster_rsa.pub
-      dest: ./spark_cluster_rsa.pub
+      src: /home/ubuntu/.ssh/id_rsa.pub
+      dest: ./id_rsa.pub
       flat: yes
 
   - name: "Task 8: Deploy SSH RSA Keys"
-    shell: cat /home/ubuntu/.ssh/spark_cluster_rsa.pub >> /home/ubuntu/.ssh/authorized_keys
+    become: no
+    shell: cat /home/ubuntu/.ssh/id_rsa.pub >> /home/ubuntu/.ssh/authorized_keys
     args:
       executable: /bin/bash
 
@@ -159,8 +161,8 @@
 
   - name: "Task 5: Copy RSA KeyFile"
     copy:
-      src: ./spark_cluster_rsa.pub
-      dest: /home/ubuntu/.ssh/spark_cluster_rsa.pub
+      src: ./id_rsa.pub
+      dest: /home/ubuntu/.ssh/id_rsa.pub
 
   - name: "Task 6: Chown RSA Keys"
     file:
@@ -168,12 +170,13 @@
       state: touch
       owner: ubuntu
       group: ubuntu
+      mode: 0600
     with_items:
-      - /home/ubuntu/.ssh/spark_cluster_rsa
-      - /home/ubuntu/.ssh/spark_cluster_rsa.pub
+      - /home/ubuntu/.ssh/id_rsa.pub
 
   - name: "Task 8: Deploy SSH RSA Keys"
-    shell: cat /home/ubuntu/.ssh/spark_cluster_rsa.pub >> /home/ubuntu/.ssh/authorized_keys
+    become: no
+    shell: cat /home/ubuntu/.ssh/id_rsa.pub >> /home/ubuntu/.ssh/authorized_keys
     args:
       executable: /bin/bash
     
@@ -250,9 +253,10 @@
   - name: "Task 7: Chown Spark"
     file:
       path: /usr/local/spark
-      state: touch
+      state: directory
       owner: ubuntu
       group: ubuntu
+      recurse: yes
 
   - name: "Task 7: Setup Spark Environment Variables"
     become: yes
@@ -281,7 +285,7 @@
       - export JAVA_HOME=/usr/lib/jvm/default-java
       - export SPARK_WORKER_CORES=4
 
-  - name: "Task 11: Configure Spark Cluster Nodes [3] ---> Set-up Spark Slaves File"
+  - name: "Task 10: Configure Spark Cluster Nodes [3] ---> Set-up Spark Slaves File"
     lineinfile:
       path: /usr/local/spark/conf/slaves
       create: yes
@@ -290,6 +294,28 @@
       owner: ubuntu
       group: ubuntu
     with_inventory_hostnames: Slaves
+
+  - set_fact:
+      spark_master_public_ip: "{{ item }}"
+    with_inventory_hostnames: Master
+
+  - set_fact:
+      spark_slave_1_public_ip: "{{ groups['Slaves']|first }}"
+
+
+  - set_fact:
+      spark_slave_2_public_ip: "{{ groups['Slaves']|last }}"
+
+  - name: "Task 11: Setup /etc/hosts"
+    become: yes
+    lineinfile:
+      path: /etc/hosts
+      line: "{{ item }}"
+      state: present
+    with_items:
+      - '{{ spark_master_public_ip }} spark-master'
+      - '{{ spark_slave_1_public_ip }} spark-slave-1'
+      - '{{ spark_slave_2_public_ip }} spark-slave-2'
 
 # --------------------------------------------------
 
