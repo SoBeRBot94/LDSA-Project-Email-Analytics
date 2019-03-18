@@ -102,22 +102,27 @@
       path: /var/log/supervisor
       state: directory
 
-  - name: "Task 13: Start Supervisord Service"
-    service:
-      name: supervisor
-      state: restarted
-
-  - name: "Task 14: Copy Jupyter Supervisor Service Configuration File"
+  - name: "Task 13: Copy Jupyter Supervisor Service Configuration File"
+    become: yes
     copy:
       src: ./jupyter.conf
       dest: /etc/supervisor/conf.d/jupyter.conf
       mode: 0644
-      owner: root
-      group: root
+      owner: ubuntu
+      group: ubuntu
 
-  - name: "Task 15: Re-load Supervisor Configuration"
-    become: yes
-    command: supervisorctl reload
+  - name: "Task 14: Start Supervisord Service"
+    service:
+      name: supervisor
+      state: restarted
+
+  - name: "Task 15: Fetch Jupyter Token"
+    shell: cat /home/ubuntu/jupyter.log | grep token | cut -d '?' -f 2 | cut -d '=' -f 2 | awk 'FNR == 2 {print $1}'
+    register: Jupyter_Token
+
+  - name: "Jupyter Token"
+    debug:
+      msg: "\n Jupyter Token: \t {{ Jupyter_Token }}"
 
 # --------------------------------------------------
 
