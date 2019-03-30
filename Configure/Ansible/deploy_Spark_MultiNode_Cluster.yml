@@ -116,14 +116,6 @@
       name: supervisor
       state: restarted
 
-  - name: "Task 15: Fetch Jupyter Token"
-    shell: cat /home/ubuntu/jupyter.log | grep token | cut -d '?' -f 2 | cut -d '=' -f 2 | awk 'FNR == 2 {print $1}'
-    register: Jupyter_Token
-
-  - name: "Jupyter Token"
-    debug:
-      msg: "\n Jupyter Token: \t {{ Jupyter_Token }}"
-
 # --------------------------------------------------
 
 - hosts: Slaves
@@ -211,15 +203,18 @@
 - hosts: Master:Slaves
   become: yes
   remote_user: ubuntu
-  gather_facts: no
+  gather_facts: yes
 
   tasks:
 
   - name: "Task 1: Install PySpark"
     pip:
-      name: pyspark
-      state: latest
+      name: "{{ item }}"
+      state: present
       executable: pip3
+    with_items:
+      - pyspark==2.3.3
+      - ipython
 
   - name: "Task 2: Setup PySpark Environment"
     become: yes
@@ -241,19 +236,19 @@
       - export JAVA_HOME=/usr/lib/jvm/default-java
       - export PATH=$PATH:$JAVA_HOME/bin
 
-  - name: "Task 4: Fetch Spark 2.4.0 - Hadoop 2.7 Tarball"
+  - name: "Task 4: Fetch Spark 2.3.3 - Hadoop 2.7 Tarball"
     get_url:
-      url: http://apache.mirrors.spacedump.net/spark/spark-2.4.0/spark-2.4.0-bin-hadoop2.7.tgz
-      dest: /home/ubuntu/spark-2.4.0-bin-hadoop2.7.tgz
+      url: http://apache.mirrors.spacedump.net/spark/spark-2.3.3/spark-2.3.3-bin-hadoop2.7.tgz
+      dest: /home/ubuntu/spark-2.3.3-bin-hadoop2.7.tgz
 
   - name: "Task 5: Extract Spark TarBall"
     unarchive:
-      src: /home/ubuntu/spark-2.4.0-bin-hadoop2.7.tgz
+      src: /home/ubuntu/spark-2.3.3-bin-hadoop2.7.tgz
       dest: /home/ubuntu/
       remote_src: yes
 
   - name: "Task 6: Setup Spark Environment"
-    command: cp -r /home/ubuntu/spark-2.4.0-bin-hadoop2.7 /usr/local/spark
+    command: cp -r /home/ubuntu/spark-2.3.3-bin-hadoop2.7 /usr/local/spark
 
   - name: "Task 7: Chown Spark"
     file:
@@ -281,16 +276,37 @@
       group: ubuntu
       remote_src: yes
 
-  - name: "Task 9: Configure Spark Cluster Nodes [2] ---> Set Spark Cluster Node Configuration Environment Variables"
+  - name: "Task 9: Configure Spark Cluster Nodes [2] ---> Copy Template File to a new Conf File"
+    copy:
+      src: /usr/local/spark/conf/spark-defaults.conf.template
+      dest: /usr/local/spark/conf/spark-defaults.conf
+      owner: ubuntu
+      group: ubuntu
+      remote_src: yes
+
+  - name: "Task 10: Configure Spark Cluster Nodes [3] ---> Set Spark Cluster Node Configuration Environment Variables"
     lineinfile:
-      path: /usr/local/spark/conf/spark-env.sh.template
+      path: /usr/local/spark/conf/spark-env.sh
       line: "{{ item }}"
       state: present
     with_items:
       - export JAVA_HOME=/usr/lib/jvm/default-java
       - export SPARK_WORKER_CORES=4
+      - export SPARK_DRIVER_MEMORY=4G
+      - export SPARK_EXECUTOR_MEMORY=8G
+      - export SPARK_WORKER_PORT=7078
+      - export SPARK_MASTER_PORT=7077
 
-  - name: "Task 10: Configure Spark Cluster Nodes [3] ---> Set-up Spark Slaves File"
+  - name: "Task 11: Configure Spark Cluster Nodes [4] ---> Set Spark Cluster Node Configuration Default Variables"
+    lineinfile:
+      path: /usr/local/spark/conf/spark-defaults.conf
+      line: "{{ item }}"
+      state: present
+    with_items:
+      - spark.ui.port 4040
+      - spark.driver.port 9929
+
+  - name: "Task 11: Configure Spark Cluster Nodes [5] ---> Set-up Spark Slaves File"
     lineinfile:
       path: /usr/local/spark/conf/slaves
       create: yes
@@ -311,7 +327,7 @@
   - set_fact:
       spark_slave_2_public_ip: "{{ groups['Slaves']|last }}"
 
-  - name: "Task 11: Setup /etc/hosts"
+  - name: "Task 12: Setup /etc/hosts"
     become: yes
     lineinfile:
       path: /etc/hosts
@@ -322,6 +338,22 @@
       - '{{ spark_slave_1_public_ip }} spark-slave-1'
       - '{{ spark_slave_2_public_ip }} spark-slave-2'
 
+  - name: "Task 13: Gather Spark Master Host Fact"
+    shell: ifconfig | grep inet\ addr | awk 'FNR ==1 {print $2}' | cut -d ':' -f 2
+    delegate_to: "{{ item }}"
+    with_inventory_hostnames: Master
+    register: ipv4
+
+  - set_fact:
+      spark_master_host: "{{ item.stdout }}"
+    loop: "{{ ipv4.results }}"
+
+  - name: "Task 14: Set Spark Master Host Environment Variable"
+    lineinfile:
+      path: /usr/local/spark/conf/spark-env.sh
+      line: export SPARK_MASTER_HOST={{ spark_master_host }}
+      state: present
+
 # --------------------------------------------------
 
 - hosts: Master
@@ -331,14 +363,16 @@
 
   tasks:
 
-  - name: "Task 1: Set Spark Master Host Fact"
-    set_fact:
-      spark_master_private_ip: "{{ ansible_all_ipv4_addresses | ipaddr('private') | first}}"
+  - name: "Check for Jupyter.log"
+    stat:
+      path: /home/ubuntu/jupyter.log
+    register: log_file
 
-  - name: "Task 2: Set Spark Master Host Environment Variable"
-    lineinfile:
-      path: /usr/local/spark/conf/spark-env.sh
-      line: "{{ item }}"
-      state: present
-    with_items:
-      - export SPARK_MASTER_HOST={{ spark_master_private_ip }}
+  - name: "Fetch Jupyter Token"
+    shell: cat /home/ubuntu/jupyter.log | grep token | cut -d '?' -f 2 | cut -d '=' -f 2 | awk 'FNR == 2 {print $1}'
+    register: Jupyter_Token
+    when: log_file.stat.exists == True
+
+  - name: "Jupyter Token"
+    debug:
+      var: Jupyter_Token.stdout_lines
