@@ -1,0 +1,11 @@
+# vi: set ft=yaml :
+---
+input:
+        basePath: '/home/ubuntu/DATA/maildir/*'
+        partitions: 1000
+export:
+        csvFile: '/home/ubuntu/DATA/export.csv'
+
+sparkContext:
+        appName: "Spark-Email-Analytics"
+        masterURL:
