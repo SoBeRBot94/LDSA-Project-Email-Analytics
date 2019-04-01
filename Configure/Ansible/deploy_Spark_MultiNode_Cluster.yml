@@ -233,7 +233,7 @@
       line: "{{ item }}"
       state: present
     with_items:
-      - export JAVA_HOME=/usr/lib/jvm/default-java
+      - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre/
       - export PATH=$PATH:$JAVA_HOME/bin
 
   - name: "Task 4: Fetch Spark 2.3.3 - Hadoop 2.7 Tarball"
@@ -258,7 +258,7 @@
       group: ubuntu
       recurse: yes
 
-  - name: "Task 7: Setup Spark Environment Variables"
+  - name: "Task 8: Setup Spark Environment Variables"
     become: yes
     lineinfile:
       path: /etc/profile
@@ -268,7 +268,7 @@
       - export SPARK_HOME=/usr/local/spark
       - export PATH=$PATH:$SPARK_HOME/bin
 
-  - name: "Task 8: Configure Spark Cluster Nodes [1] ---> Copy Template File to a new Env File"
+  - name: "Task 9: Configure Spark Cluster Nodes [1] ---> Copy Template File to a new Env File"
     copy:
       src: /usr/local/spark/conf/spark-env.sh.template
       dest: /usr/local/spark/conf/spark-env.sh
@@ -276,7 +276,7 @@
       group: ubuntu
       remote_src: yes
 
-  - name: "Task 9: Configure Spark Cluster Nodes [2] ---> Copy Template File to a new Conf File"
+  - name: "Task 10: Configure Spark Cluster Nodes [2] ---> Copy Template File to a new Conf File"
     copy:
       src: /usr/local/spark/conf/spark-defaults.conf.template
       dest: /usr/local/spark/conf/spark-defaults.conf
@@ -284,20 +284,20 @@
       group: ubuntu
       remote_src: yes
 
-  - name: "Task 10: Configure Spark Cluster Nodes [3] ---> Set Spark Cluster Node Configuration Environment Variables"
+  - name: "Task 11: Configure Spark Cluster Nodes [3] ---> Set Spark Cluster Node Configuration Environment Variables"
     lineinfile:
       path: /usr/local/spark/conf/spark-env.sh
       line: "{{ item }}"
       state: present
     with_items:
-      - export JAVA_HOME=/usr/lib/jvm/default-java
+      - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre/
       - export SPARK_WORKER_CORES=4
       - export SPARK_DRIVER_MEMORY=4G
       - export SPARK_EXECUTOR_MEMORY=8G
       - export SPARK_WORKER_PORT=7078
       - export SPARK_MASTER_PORT=7077
 
-  - name: "Task 11: Configure Spark Cluster Nodes [4] ---> Set Spark Cluster Node Configuration Default Variables"
+  - name: "Task 12: Configure Spark Cluster Nodes [4] ---> Set Spark Cluster Node Configuration Default Variables"
     lineinfile:
       path: /usr/local/spark/conf/spark-defaults.conf
       line: "{{ item }}"
@@ -306,7 +306,7 @@
       - spark.ui.port 4040
       - spark.driver.port 9929
 
-  - name: "Task 11: Configure Spark Cluster Nodes [5] ---> Set-up Spark Slaves File"
+  - name: "Task 13: Configure Spark Cluster Nodes [5] ---> Set-up Spark Slaves File"
     lineinfile:
       path: /usr/local/spark/conf/slaves
       create: yes
@@ -327,7 +327,7 @@
   - set_fact:
       spark_slave_2_public_ip: "{{ groups['Slaves']|last }}"
 
-  - name: "Task 12: Setup /etc/hosts"
+  - name: "Task 14: Setup /etc/hosts"
     become: yes
     lineinfile:
       path: /etc/hosts
@@ -338,7 +338,7 @@
       - '{{ spark_slave_1_public_ip }} spark-slave-1'
       - '{{ spark_slave_2_public_ip }} spark-slave-2'
 
-  - name: "Task 13: Gather Spark Master Host Fact"
+  - name: "Task 15: Gather Spark Master Host Fact"
     shell: ifconfig | grep inet\ addr | awk 'FNR ==1 {print $2}' | cut -d ':' -f 2
     delegate_to: "{{ item }}"
     with_inventory_hostnames: Master
@@ -348,7 +348,7 @@
       spark_master_host: "{{ item.stdout }}"
     loop: "{{ ipv4.results }}"
 
-  - name: "Task 14: Set Spark Master Host Environment Variable"
+  - name: "Task 16: Set Spark Master Host Environment Variable"
     lineinfile:
       path: /usr/local/spark/conf/spark-env.sh
       line: export SPARK_MASTER_HOST={{ spark_master_host }}
