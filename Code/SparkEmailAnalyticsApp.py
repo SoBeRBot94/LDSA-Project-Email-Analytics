@@ -51,7 +51,7 @@ def RDDHeadersStripper(lines):
     return [messageID, subject, date]
 
 def RDDBuilder():
-    inputRDD = sc.wholeTextFiles(basePath + "/" + "sent_items" + "/*", partitions).cache()
+    inputRDD = sc.wholeTextFiles(basePath + "/" + "text_000" + "/*", partitions).cache()
     '''Read All The Files From sent_items Directory'''
 
     filteredRDD = inputRDD.filter(lambda x: bool(re.compile('MESSAGE-ID:', re.IGNORECASE).search(x[1])) & bool(re.compile('From:', re.IGNORECASE).search(x[1])) & bool(re.compile('Date:', re.IGNORECASE).search(x[1]))).map(lambda x: x[1].strip('\r\n\r\n')[0]).map(lambda x: x.split('\r\n')).map(RDDHeadersStripper).collect()
