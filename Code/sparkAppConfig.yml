@@ -1,11 +1,8 @@
 # vi: set ft=yaml :
 ---
-input:
-        basePath: '/home/ubuntu/DATA/dir/*'
-        partitions: 1000
-export:
-        csvFile: '/home/ubuntu/DATA/export.csv'
+import:
+        csvFile: '/home/ubuntu/DATA/enron_05_17_2015_with_labels_v2.csv_enron_05_17_2015_with_labels_v2.csv'
 
-sparkContext:
+sparkConfig:
         appName: "Spark-Email-Analytics"
         masterURL:
