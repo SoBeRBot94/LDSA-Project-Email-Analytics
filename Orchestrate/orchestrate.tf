@@ -147,7 +147,7 @@ resource "openstack_compute_volume_attach_v2" "Volume-Attach" {
 
 resource "openstack_compute_instance_v2" "Spark-Slaves" {
   count           = "${var.slaves_count}"
-  name            = "${format("Spark-Slave-%d", count.index+1)}"
+  name            = "${format("Spark-Slave-%d", count.index + 1)}"
   image_id        = "${var.compute_image_id}"
   flavor_name     = "${var.compute_flavor_name}"
   key_pair        = "${var.compute_key_pair_name}"
@@ -178,9 +178,9 @@ resource "openstack_compute_floatingip_associate_v2" "Slaves-FIP" {
 }
 
 # ==================================================
-# Ansible Dynamic Inventory Block
+# Ansible Static Inventory Block
 
-data "template_file" "Ansible_Dynamic_Inventory" {
+data "template_file" "Ansible_Static_Inventory" {
   template = "${file("${path.module}/ansible_hosts.tpl")}"
 
   depends_on = [
@@ -195,12 +195,12 @@ data "template_file" "Ansible_Dynamic_Inventory" {
   }
 }
 
-resource "null_resource" "Ansible_Dynamic_Inventory" {
+resource "null_resource" "Ansible_Static_Inventory" {
   triggers {
-    template_rendered = "${join("",data.template_file.Ansible_Dynamic_Inventory.*.rendered)}"
+    template_rendered = "${join("", data.template_file.Ansible_Static_Inventory.*.rendered)}"
   }
 
   provisioner "local-exec" {
-    command = "echo '${join("",data.template_file.Ansible_Dynamic_Inventory.*.rendered)}' > Spark_Cluster_Hosts"
+    command = "echo '${join("", data.template_file.Ansible_Static_Inventory.*.rendered)}' > Spark_Cluster_Hosts"
   }
 }
