@@ -1,0 +1,21 @@
+# vi: set ft=yaml.ansible :
+---
+- hosts: Master:Slaves
+  remote_user: sudarsan.bhargavan94
+  gather_facts: no
+
+  tasks:
+
+  - name: "Task 1: Create SparkApp Directory"
+    file:
+      path: /home/sudarsan.bhargavan94/EmailAnalysis
+      state: directory
+      owner: sudarsan.bhargavan94
+      group: sudarsan.bhargavan94
+
+  - name: "Task 2: Copy Data to the Spark Nodes"
+    copy:
+      src: ../../../enron_05_17_2015_with_labels_v2.csv
+      dest: /home/sudarsan.bhargavan94/EmailAnalysis/enronEmails.csv
+      owner: sudarsan.bhargavan94
+      group: sudarsan.bhargavan94
