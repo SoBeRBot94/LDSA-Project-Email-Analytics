@@ -1,11 +1,7 @@
 __pycache__
-Counts.txt
-*.html
-config.yml
 terraform.tfvars
 *.tfstate
 *.tfstate.backup
 .terraform/
 Spark_Cluster_Hosts
-Inventory
 id_rsa.pub
