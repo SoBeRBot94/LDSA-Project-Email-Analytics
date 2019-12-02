@@ -1,8 +1,0 @@
-# vi: set ft=yaml :
----
-import:
-        csvFile: '/home/ubuntu/DATA/enron_05_17_2015_with_labels_v2.csv_enron_05_17_2015_with_labels_v2.csv'
-
-sparkConfig:
-        appName: "Spark-Email-Analytics"
-        masterURL:
