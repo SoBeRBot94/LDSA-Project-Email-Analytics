@@ -1,0 +1,6 @@
+[Master]
+35.238.107.208
+
+[Slaves]
+35.184.130.31	hostname_suffix=1
+35.225.206.104	hostname_suffix=2
