@@ -2,7 +2,7 @@
 ---
 - hosts: Master
   become: yes
-  remote_user: ubuntu
+  remote_user: sudarsan.bhargavan94
   gather_facts: no
   pre_tasks:
     - name: "Update Aptitude Cache"
@@ -42,30 +42,30 @@
       replace: 'preserve_hostname: yes'
 
   - name: "Task 5: Create SSH RSA Keys"
-    command: ssh-keygen -t rsa -f /home/ubuntu/.ssh/id_rsa -P ""
+    command: ssh-keygen -t rsa -f /home/sudarsan.bhargavan94/.ssh/id_rsa -P ""
     args:
-      creates: /home/ubuntu/.ssh/id_rsa
+      creates: /home/sudarsan.bhargavan94/.ssh/id_rsa
 
   - name: "Task 6: Chown SSH RSA Keys"
     file:
       path: "{{ item }}"
       state: touch
-      owner: ubuntu
-      group: ubuntu
+      owner: sudarsan.bhargavan94
+      group: sudarsan.bhargavan94
       mode: 0600
     with_items:
-      - /home/ubuntu/.ssh/id_rsa
-      - /home/ubuntu/.ssh/id_rsa.pub
+      - /home/sudarsan.bhargavan94/.ssh/id_rsa
+      - /home/sudarsan.bhargavan94/.ssh/id_rsa.pub
 
   - name: "Task 7: Fetch SSH RSA KeyFile"
     fetch:
-      src: /home/ubuntu/.ssh/id_rsa.pub
+      src: /home/sudarsan.bhargavan94/.ssh/id_rsa.pub
       dest: ./id_rsa.pub
       flat: yes
 
   - name: "Task 8: Deploy SSH RSA Keys"
     become: no
-    shell: cat /home/ubuntu/.ssh/id_rsa.pub >> /home/ubuntu/.ssh/authorized_keys
+    shell: cat /home/sudarsan.bhargavan94/.ssh/id_rsa.pub >> /home/sudarsan.bhargavan94/.ssh/authorized_keys
     args:
       executable: /bin/bash
 
@@ -75,7 +75,7 @@
       name: "{{ item }}"
       state: present
     with_items:
-      - default-jre
+      - openjdk-8-jdk
       - scala
       - python3
       - python-pip
@@ -108,8 +108,8 @@
       src: ./jupyter.conf
       dest: /etc/supervisor/conf.d/jupyter.conf
       mode: 0644
-      owner: ubuntu
-      group: ubuntu
+      owner: sudarsan.bhargavan94
+      group: sudarsan.bhargavan94
 
   - name: "Task 14: Start Supervisord Service"
     service:
@@ -120,7 +120,7 @@
 
 - hosts: Slaves
   become: yes
-  remote_user: ubuntu
+  remote_user: sudarsan.bhargavan94
   gather_facts: no
   pre_tasks:
     - name: "Update Aptitude Cache"
@@ -159,21 +159,21 @@
   - name: "Task 5: Copy RSA KeyFile"
     copy:
       src: ./id_rsa.pub
-      dest: /home/ubuntu/.ssh/id_rsa.pub
+      dest: /home/sudarsan.bhargavan94/.ssh/id_rsa.pub
 
   - name: "Task 6: Chown RSA Keys"
     file:
       path: "{{ item }}"
       state: touch
-      owner: ubuntu
-      group: ubuntu
+      owner: sudarsan.bhargavan94
+      group: sudarsan.bhargavan94
       mode: 0600
     with_items:
-      - /home/ubuntu/.ssh/id_rsa.pub
+      - /home/sudarsan.bhargavan94/.ssh/id_rsa.pub
 
   - name: "Task 8: Deploy SSH RSA Keys"
     become: no
-    shell: cat /home/ubuntu/.ssh/id_rsa.pub >> /home/ubuntu/.ssh/authorized_keys
+    shell: cat /home/sudarsan.bhargavan94/.ssh/id_rsa.pub >> /home/sudarsan.bhargavan94/.ssh/authorized_keys
     args:
       executable: /bin/bash
     
@@ -183,7 +183,7 @@
       name: "{{ item }}"
       state: present
     with_items:
-      - default-jre
+      - openjdk-8-jdk
       - scala
       - python3
       - python-pip
@@ -202,7 +202,7 @@
 
 - hosts: Master:Slaves
   become: yes
-  remote_user: ubuntu
+  remote_user: sudarsan.bhargavan94
   gather_facts: yes
 
   tasks:
@@ -213,8 +213,10 @@
       state: present
       executable: pip3
     with_items:
-      - pyspark==2.3.3
+      - pyspark
       - ipython
+      - plotly
+      - pandas
 
   - name: "Task 2: Setup PySpark Environment"
     become: yes
@@ -233,29 +235,29 @@
       line: "{{ item }}"
       state: present
     with_items:
-      - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre/
+      - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre
       - export PATH=$PATH:$JAVA_HOME/bin
 
-  - name: "Task 4: Fetch Spark 2.3.3 - Hadoop 2.7 Tarball"
+  - name: "Task 4: Fetch Spark 2.4.4 - Hadoop 2.7 Tarball"
     get_url:
-      url: http://apache.mirrors.spacedump.net/spark/spark-2.3.3/spark-2.3.3-bin-hadoop2.7.tgz
-      dest: /home/ubuntu/spark-2.3.3-bin-hadoop2.7.tgz
+      url: http://apache.mirrors.spacedump.net/spark/spark-2.4.4/spark-2.4.4-bin-hadoop2.7.tgz
+      dest: /home/sudarsan.bhargavan94/spark-2.4.4-bin-hadoop2.7.tgz
 
   - name: "Task 5: Extract Spark TarBall"
     unarchive:
-      src: /home/ubuntu/spark-2.3.3-bin-hadoop2.7.tgz
-      dest: /home/ubuntu/
+      src: /home/sudarsan.bhargavan94/spark-2.4.4-bin-hadoop2.7.tgz
+      dest: /home/sudarsan.bhargavan94/
       remote_src: yes
 
   - name: "Task 6: Setup Spark Environment"
-    command: cp -r /home/ubuntu/spark-2.3.3-bin-hadoop2.7 /usr/local/spark
+    command: cp -r /home/sudarsan.bhargavan94/spark-2.4.4-bin-hadoop2.7 /usr/local/spark
 
   - name: "Task 7: Chown Spark"
     file:
       path: /usr/local/spark
       state: directory
-      owner: ubuntu
-      group: ubuntu
+      owner: sudarsan.bhargavan94
+      group: sudarsan.bhargavan94
       recurse: yes
 
   - name: "Task 8: Setup Spark Environment Variables"
@@ -272,48 +274,18 @@
     copy:
       src: /usr/local/spark/conf/spark-env.sh.template
       dest: /usr/local/spark/conf/spark-env.sh
-      owner: ubuntu
-      group: ubuntu
+      owner: sudarsan.bhargavan94
+      group: sudarsan.bhargavan94
       remote_src: yes
 
-  - name: "Task 10: Configure Spark Cluster Nodes [2] ---> Copy Template File to a new Conf File"
-    copy:
-      src: /usr/local/spark/conf/spark-defaults.conf.template
-      dest: /usr/local/spark/conf/spark-defaults.conf
-      owner: ubuntu
-      group: ubuntu
-      remote_src: yes
-
-  - name: "Task 11: Configure Spark Cluster Nodes [3] ---> Set Spark Cluster Node Configuration Environment Variables"
-    lineinfile:
-      path: /usr/local/spark/conf/spark-env.sh
-      line: "{{ item }}"
-      state: present
-    with_items:
-      - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre/
-      - export SPARK_WORKER_CORES=4
-      - export SPARK_DRIVER_MEMORY=4G
-      - export SPARK_EXECUTOR_MEMORY=8G
-      - export SPARK_WORKER_PORT=7078
-      - export SPARK_MASTER_PORT=7077
-
-  - name: "Task 12: Configure Spark Cluster Nodes [4] ---> Set Spark Cluster Node Configuration Default Variables"
-    lineinfile:
-      path: /usr/local/spark/conf/spark-defaults.conf
-      line: "{{ item }}"
-      state: present
-    with_items:
-      - spark.ui.port 4040
-      - spark.driver.port 9929
-
-  - name: "Task 13: Configure Spark Cluster Nodes [5] ---> Set-up Spark Slaves File"
+  - name: "Task 10: Configure Spark Cluster Nodes [5] ---> Set-up Spark Slaves File"
     lineinfile:
       path: /usr/local/spark/conf/slaves
       create: yes
       line: "{{ item }}"
       state: present
-      owner: ubuntu
-      group: ubuntu
+      owner: sudarsan.bhargavan94
+      group: sudarsan.bhargavan94
     with_inventory_hostnames: Slaves
 
   - set_fact:
@@ -327,7 +299,7 @@
   - set_fact:
       spark_slave_2_public_ip: "{{ groups['Slaves']|last }}"
 
-  - name: "Task 14: Setup /etc/hosts"
+  - name: "Task 11: Setup /etc/hosts"
     become: yes
     lineinfile:
       path: /etc/hosts
@@ -338,17 +310,10 @@
       - '{{ spark_slave_1_public_ip }} spark-slave-1'
       - '{{ spark_slave_2_public_ip }} spark-slave-2'
 
-  - name: "Task 15: Gather Spark Master Host Fact"
-    shell: ifconfig | grep inet\ addr | awk 'FNR ==1 {print $2}' | cut -d ':' -f 2
-    delegate_to: "{{ item }}"
-    with_inventory_hostnames: Master
-    register: ipv4
-
   - set_fact:
-      spark_master_host: "{{ item.stdout }}"
-    loop: "{{ ipv4.results }}"
+      spark_master_host: '10.128.0.9'
 
-  - name: "Task 16: Set Spark Master Host Environment Variable"
+  - name: "Task 12: Set Spark Master Host Environment Variable"
     lineinfile:
       path: /usr/local/spark/conf/spark-env.sh
       line: export SPARK_MASTER_HOST={{ spark_master_host }}
@@ -358,18 +323,18 @@
 
 - hosts: Master
   become: yes
-  remote_user: ubuntu
+  remote_user: sudarsan.bhargavan94
   gather_facts: yes
 
   tasks:
 
   - name: "Check for Jupyter.log"
     stat:
-      path: /home/ubuntu/jupyter.log
+      path: /home/sudarsan.bhargavan94/jupyter.log
     register: log_file
 
   - name: "Fetch Jupyter Token"
-    shell: cat /home/ubuntu/jupyter.log | grep token | cut -d '?' -f 2 | cut -d '=' -f 2 | awk 'FNR == 2 {print $1}'
+    shell: cat /home/sudarsan.bhargavan94/jupyter.log | grep token | cut -d '?' -f 2 | cut -d '=' -f 2 | awk 'FNR == 2 {print $1}'
     register: Jupyter_Token
     when: log_file.stat.exists == True
 
