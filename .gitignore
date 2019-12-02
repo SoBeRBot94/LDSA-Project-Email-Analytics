@@ -5,3 +5,4 @@ terraform.tfvars
 .terraform/
 Spark_Cluster_Hosts
 id_rsa.pub
+.ipynb_checkpoints
